@@ -1,0 +1,8 @@
+allowBuilds:
+  esbuild: true
+
+# Direkte Abhaengigkeiten auf die Untergrenze der Range aufloesen. Die
+# Untergrenzen sind die Zielversionen aus hausbasis/baseline.json; ohne das
+# zieht ein frisches Lockfile die neuesten Patch-Staende und der gemeinsame
+# pnpm-Store haelt einen zweiten Stand.
+resolutionMode: lowest-direct

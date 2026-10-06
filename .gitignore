@@ -1,0 +1,6 @@
+node_modules
+dist
+*.tsbuildinfo
+# Rohdaten der Geometrie-ETL, jederzeit neu abrufbar
+etl/roh/
+__pycache__/

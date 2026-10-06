@@ -1,0 +1,41 @@
+name: Deploy auf moosburg.eu/innenstadt/
+
+# Läuft neben dem GitHub-Pages-Workflow in pages.yml auf demselben Branch.
+# Beide Ausspielungen liegen unter /innenstadt/, deshalb derselbe Build.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-innenstadt
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+
+      - name: Nach innenstadt/ spiegeln
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./dist/
+          server-dir: innenstadt/
+          # Ein FTP-Konto für alle Projekte; läuft parallel ein anderer
+          # Deploy, nimmt Hostinger die Verbindung erst spät an.
+          # dangerous-clean-slate bleibt aus, siehe moosburg-eu/BRIEFING.md.
+          timeout: 120000

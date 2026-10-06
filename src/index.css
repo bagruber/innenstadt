@@ -1,0 +1,29 @@
+@import "tailwindcss";
+@import "@fontsource-variable/source-serif-4/opsz.css";
+@import "@fontsource-variable/atkinson-hyperlegible-next";
+
+/* Die Grund-Tokens kommen aus dem gemeinsamen Kanon:
+   github.com/bagruber/moosburg-design */
+@import "moosburg-design/css/theme.css";
+
+/* Spielzustand: passt hierhin / passt nicht. Bedienfarben, kein Gegenstand
+   im Sinne von K1, deshalb eigene Namen. Werte aus dem Kanon (zeichnung-
+   tannengruen, red-500); blockiert trägt zusätzlich eine Schraffur, damit die
+   Unterscheidung nicht allein an der Farbe hängt. Kandidat für den Kanon. */
+@theme {
+  --color-erlaubt: #157840;
+  --color-blockiert: #c8102e;
+}
+
+body {
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:where(a, button, select, textarea, input):focus-visible {
+  outline: 2px solid var(--color-red-500);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}

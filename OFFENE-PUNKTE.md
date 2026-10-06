@@ -34,6 +34,24 @@
 - Zellen, deren Mitte frei ist, können halb unter einem Gebäude liegen; die
   Farbe ist dort nur teilweise sichtbar.
 
+## Weitere Stationen
+
+- Im Bild: Die Straßenskizze ist Platzhalter. Braucht zwei, drei Fotos der
+  Herrnstraße aus Augenhöhe, dann ersetzt eines die Skizze; Horizont und
+  Fluchtpunkt in `src/bild/Bild.tsx` daran anpassen.
+- Swipe: Die 14 Vorschläge sind ein Entwurf. Pressestelle und Nicole sollten
+  sie auf Ausgewogenheit und Lokalbezug prüfen.
+- Lärm und Anreise: Der Vergleich nach Rollen (Anwohner gegen Gastronomie,
+  Händlerschätzung gegen Kundschaft) braucht gesammelte Antworten.
+- Abgeschaut: Hochladen, Prüfen und die gemeinsame Sammlung brauchen ein
+  Backend mit Moderation. Bilder werden schon im Browser auf 1200 px
+  verkleinert und neu kodiert, damit fallen Metadaten samt Aufnahmeort weg.
+- Leerstand-QR („Was wäre hier drin?“) ist nicht gebaut: braucht eine
+  Leerstandsliste und die Zustimmung der Eigentümer.
+- Straßen: Abschnitte kommen aus OSM und sind teils sehr kurz (unter 10 m).
+  Für die Auswertung reicht das, zum Antippen wären längere Abschnitte
+  angenehmer.
+
 ## Bis zum Start
 
 - `noindex` aus `index.html` nehmen, Eintrag in `llms.txt` und

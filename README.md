@@ -4,9 +4,25 @@ Beteiligung zur Moosburger Innenstadt: Parken, Schatten, Läden, Lärm und
 Plätze zum Bleiben. Statt eines klassischen Fragebogens ein Rundgang durch
 Orte und Themen, mit Karte, Baukasten und Swipe-Fragen.
 
-**Stand:** Platzhalterseite. Zwei Prototypen hängen bis zum Start als Anker
-daran: `/innenstadt/#baukasten` (Herrnstraße umbauen) und
-`/innenstadt/#markieren` (Altstadtkarte bemalen).
+**Stand:** Platzhalterseite. Der Rundgang hängt bis zum Start als Anker
+daran, Einstieg unter `/innenstadt/#start`: Rolle wählen, neun Stationen in
+freier Reihenfolge, der Rainbow-Stripe zeigt den Fortschritt.
+
+| Anker | Station |
+|---|---|
+| `#baukasten` | 1 · Die Herrnstraße umbauen, Citybuilder mit Budget |
+| `#markieren` | 2 · Deine Altstadt: vier Fragen auf der Karte anmalen |
+| `#pins` | 3 · Gefühlskarte: schön, laut, heiß, unsicher, Barriere, Sitzplatz fehlt |
+| `#strassen` | 4 · Straßen beruhigen: Abschnitte antippen |
+| `#swipe` | 5 · Dafür oder dagegen: 14 Vorschläge wischen, mit „Warum?“ |
+| `#laerm` | 6 · Bis wann ist es okay? Uhrzeit-Regler für drei Abendszenen |
+| `#anreise` | 7 · Wie kommst du her? Mit Schätzfrage für Geschäfte |
+| `#kalender` | 8 · Ein Jahr Innenstadt: Wunschkalender |
+| `#bild` | 9 · Im Bild: markieren und Dinge hineinstellen |
+| `#abgeschaut` | außer der Reihe: Foto aus einer anderen Stadt mitbringen |
+
+Alle Antworten bleiben im Prototyp im Browser (`localStorage`); es gibt
+noch kein Backend.
 
 🔗 [moosburg.eu/innenstadt](https://moosburg.eu/innenstadt/) ·
 [bagruber.github.io/innenstadt](https://bagruber.github.io/innenstadt/)
@@ -55,6 +71,9 @@ der Maus, ein Klick baut. Bestehendes erst antippen, dann ziehen. Ein Finger
 auf freier Fläche verschiebt die Karte, zwei Finger zoomen.
 
 ## Markieren
+
+Die Altstadtkarte (`src/karte/`) ist ein Schwarzplan aus Kataster und OSM,
+gemeinsam genutzt von Markieren, Gefühlskarte, Straßen und Abgeschaut.
 
 Vier Fragen auf der Altstadtkarte (heute gern dort, gern dort wenn schöner,
 Autos stören, gut abschalten), gemalt auf einem 8-m-Raster. Zellen in

@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useKamera, type Groesse } from "@/karte/kamera";
 import type { P } from "@/baukasten/geometrie";
-import { ZELLE, karte, orte, strich, zellPfad } from "./altstadt";
+import { ZELLE, karte, orte, strich, zellPfad } from "@/karte/altstadt";
+import { Altstadtkarte, RAHMEN, modellPunkt as mp, stadtplatz } from "@/karte/Altstadtkarte";
+import { Geschafft, Kartenknopf, Knopf, Kopf } from "@/ui";
+import { useRundgang } from "@/rundgang";
 
 const SPEICHER = "markieren-altstadt-1";
-const STATION = 2; // Andeutung des Rundgangs
-const STRIPE = ["bg-rb-1", "bg-rb-2", "bg-rb-3", "bg-rb-4", "bg-rb-5", "bg-rb-6", "bg-rb-7", "bg-rb-8", "bg-rb-9"];
+const STATION = 2;
 
 // Farbe nach Gegenstand (Kanon K1): Begegnung aubergine, Mitmachen gold,
 // Wege isarpetrol, Natur tannengrün. Volle Klassennamen für Tailwind.
@@ -33,9 +35,6 @@ function laden(): { antworten: Antworten; schritt: number } {
   return { antworten: leer(), schritt: 0 };
 }
 
-const pfad = (ring: P[]) => "M" + ring.map((p) => p.map((v) => v.toFixed(1)).join(" ")).join("L") + "Z";
-const stadtplatz = karte.namen.find((n) => n.name === "Stadtplatz")?.pos ?? [karte.groesse[0] / 2, karte.groesse[1] / 2];
-const RAHMEN = { x: 0, y: 0, w: karte.groesse[0], h: karte.groesse[1] };
 
 export default function Markieren() {
   const [stand, setStand] = useState(laden);
@@ -47,6 +46,8 @@ export default function Markieren() {
   const [zeiger, setZeiger] = useState<P | null>(null);
   const strichRef = useRef<{ letzter: P; vorher: Antworten; cx: number; cy: number } | null>(null);
   const gruppe = useRef<SVGGElement>(null);
+  const { erledige } = useRundgang();
+  useEffect(() => { if (auswertung) erledige(STATION); }, [auswertung]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const start = (b: Groesse) => {
     const s = b.w < b.h ? b.w / 220 : b.h / 360;
@@ -58,13 +59,7 @@ export default function Markieren() {
     try { localStorage.setItem(SPEICHER, JSON.stringify(stand)); } catch { /* egal */ }
   }, [stand]);
 
-  function modellPunkt(cx: number, cy: number): P {
-    const g = gruppe.current!;
-    const pt = g.ownerSVGElement!.createSVGPoint();
-    pt.x = cx; pt.y = cy;
-    const m = pt.matrixTransform(g.getScreenCTM()!.inverse());
-    return [m.x, m.y];
-  }
+  const modellPunkt = (cx: number, cy: number) => mp(gruppe.current!, cx, cy);
 
   function trage(zellen: number[], a: Antworten): Antworten {
     const s = new Set(a[frage.id]);
@@ -136,40 +131,24 @@ export default function Markieren() {
           <path d={`M${ZELLE} 0H0V${ZELLE}`} className="fill-none stroke-ink/10" strokeWidth={0.5} vectorEffect="non-scaling-stroke" />
         </pattern>
       </defs>
-      <rect x={-1e4} y={-1e4} width={2e4} height={2e4} className="fill-cream-dark" />
-      <g ref={gruppe}>
-        {karte.flaechen.verkehr.map((f, i) => <path key={`v${i}`} d={f.map(pfad).join("")} className="fill-cream" fillRule="evenodd" />)}
-        {karte.flaechen.gruen.map((f, i) => <path key={`g${i}`} d={f.map(pfad).join("")} className="fill-thema-tannengruen/15" fillRule="evenodd" />)}
-        {karte.flaechen.wasser.map((f, i) => <path key={`w${i}`} d={f.map(pfad).join("")} className="fill-thema-isarpetrol/30" fillRule="evenodd" />)}
-        {!auswertung && zoomGross && <rect width={karte.groesse[0]} height={karte.groesse[1]} fill="url(#gitter)" pointerEvents="none" />}
-
-        {auswertung ? (
-          <>
-            <path d={pfade.heute} className="fill-thema-aubergine/45" />
-            <path d={zellPfad(wunschNeu)} className="fill-gold-500/75" />
-          </>
-        ) : (
-          <>
-            {frage.id === "wunsch" && <path d={pfade.heute} className={FRAGEN[0].leise} />}
-            <path d={pfade[frage.id]} className={frage.malen} />
-          </>
-        )}
-
-        {karte.gebaeude.map((g, i) => <path key={i} d={pfad(g)} className="fill-ink/85 stroke-cream-dark" strokeWidth={0.5} vectorEffect="non-scaling-stroke" />)}
-        {zeiger && malbar && (
+      <Altstadtkarte gruppeRef={gruppe} schrift={schrift}
+        unten={<>
+          {!auswertung && zoomGross && <rect width={karte.groesse[0]} height={karte.groesse[1]} fill="url(#gitter)" pointerEvents="none" />}
+          {auswertung ? (
+            <>
+              <path d={pfade.heute} className="fill-thema-aubergine/45" />
+              <path d={zellPfad(wunschNeu)} className="fill-gold-500/75" />
+            </>
+          ) : (
+            <>
+              {frage.id === "wunsch" && <path d={pfade.heute} className={FRAGEN[0].leise} />}
+              <path d={pfade[frage.id]} className={frage.malen} />
+            </>
+          )}
+        </>}
+        oben={zeiger && malbar && (
           <circle cx={zeiger[0]} cy={zeiger[1]} r={ZELLE * 1.2} className={werkzeug === "radieren" ? "fill-none stroke-blockiert" : "fill-none stroke-ink"} strokeWidth={1.5} strokeDasharray="4 3" vectorEffect="non-scaling-stroke" pointerEvents="none" />
-        )}
-        {karte.namen.map((n) => {
-          // lesbar halten: nie auf dem Kopf
-          const w = n.winkel > 90 ? n.winkel - 180 : n.winkel < -90 ? n.winkel + 180 : n.winkel;
-          return (
-            <text key={n.name} transform={`translate(${n.pos[0]} ${n.pos[1]}) rotate(${w})`} fontSize={schrift} textAnchor="middle" dominantBaseline="middle"
-              className="fill-ink-soft font-sans" style={{ fontWeight: 600, paintOrder: "stroke" }} stroke="var(--color-cream)" strokeWidth={schrift * 0.25} pointerEvents="none">
-              {n.name}
-            </text>
-          );
-        })}
-      </g>
+        )} />
     </svg>
   );
 
@@ -213,15 +192,7 @@ export default function Markieren() {
   return (
     <div className="flex h-dvh flex-col bg-cream text-ink md:flex-row">
       <div className="flex min-h-0 flex-1 flex-col">
-        <header className="shrink-0 border-b border-ink-line">
-          <div className="grid h-1 grid-cols-9" aria-label={`Station ${STATION} von 9`}>
-            {STRIPE.map((c, i) => <span key={c} className={i < STATION ? c : "bg-ink-line"} />)}
-          </div>
-          <div className="px-4 pt-3 pb-2.5">
-            <p className="text-[13px] font-semibold text-gold-700">Station {STATION} von 9</p>
-            <h1 className="font-display text-[1.6rem] leading-tight font-semibold">Deine Altstadt</h1>
-          </div>
-        </header>
+        <Kopf station={STATION} titel="Deine Altstadt" />
         <div ref={kam.buehne} className="relative min-h-0 flex-1 overflow-hidden">
           {karteSvg}
           <div className="absolute top-3 right-3 flex flex-col gap-1">
@@ -236,12 +207,11 @@ export default function Markieren() {
             </p>
           )}
         </div>
-        <div className="shrink-0 border-t border-ink-line px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">{blatt}</div>
       </div>
-      <aside className="hidden w-[22rem] shrink-0 flex-col gap-4 border-l border-ink-line p-4 md:flex">
+      <div className="max-h-[48dvh] shrink-0 overflow-auto border-t border-ink-line px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:flex md:max-h-none md:w-[22rem] md:flex-col md:gap-4 md:border-t-0 md:border-l md:p-4">
         {blatt}
-        {!auswertung && <p className="mt-auto text-[12.5px] text-ink-muted">Mausrad zoomt. Zum Verschieben mit der Maus das Werkzeug „Verschieben“ nehmen.</p>}
-      </aside>
+        {!auswertung && <p className="mt-auto hidden text-[12.5px] text-ink-muted md:block">Mausrad zoomt. Zum Verschieben mit der Maus das Werkzeug „Verschieben“ nehmen.</p>}
+      </div>
     </div>
   );
 }
@@ -250,11 +220,7 @@ function Auswertung({ antworten, wunschNeu, onZurueck }: { antworten: Antworten;
   const wo = orte(wunschNeu);
   const autos = orte(antworten.autos, 2);
   return (
-    <div className="grid gap-3">
-      <div>
-        <p className="text-[13px] font-semibold text-gold-700">Station {STATION} geschafft</p>
-        <h2 className="font-display text-xl leading-snug font-semibold">Wo dir etwas fehlt</h2>
-      </div>
+    <Geschafft station={STATION} titel="Wo dir etwas fehlt" onAendern={onZurueck}>
       <ul className="grid gap-1.5 text-sm">
         <li className="flex items-center gap-2"><span className="size-3 shrink-0 rounded-sm bg-thema-aubergine/45" aria-hidden="true" />Heute gern dort</li>
         <li className="flex items-center gap-2"><span className="size-3 shrink-0 rounded-sm bg-gold-500/75" aria-hidden="true" />Wärst gern dort, bist es heute nicht</li>
@@ -265,30 +231,7 @@ function Auswertung({ antworten, wunschNeu, onZurueck }: { antworten: Antworten;
           : "Deine Wunschorte decken sich mit denen, an denen du heute schon bist."}
         {autos.length ? <> Autos stören dich vor allem hier: {autos.join(", ")}.</> : null}
       </p>
-      <p className="text-sm text-ink-soft">
-        Im fertigen Rundgang kommen hier die Karten aller Teilnehmenden zusammen. Danach geht es zur nächsten Station.
-      </p>
-      <div className="flex gap-2">
-        <Knopf onClick={onZurueck}>Noch einmal ändern</Knopf>
-      </div>
-    </div>
-  );
-}
-
-function Knopf({ children, onClick, stark }: { children: ReactNode; onClick: () => void; stark?: boolean }) {
-  return (
-    <button type="button" onClick={onClick}
-      className={`rounded-[10px] px-3.5 py-2 text-sm font-semibold ${stark ? "bg-gold-700 text-cream" : "border border-ink-line bg-cream text-ink"}`}>
-      {children}
-    </button>
-  );
-}
-
-function Kartenknopf({ children, label, onClick, aus }: { children: ReactNode; label: string; onClick: () => void; aus?: boolean }) {
-  return (
-    <button type="button" aria-label={label} title={label} onClick={onClick} disabled={aus}
-      className="grid size-10 place-items-center rounded-[10px] border border-ink-line bg-cream/95 text-lg leading-none shadow-sm disabled:opacity-40">
-      {children}
-    </button>
+      <p className="text-sm text-ink-soft">Im fertigen Rundgang kommen hier die Karten aller Teilnehmenden zusammen.</p>
+    </Geschafft>
   );
 }

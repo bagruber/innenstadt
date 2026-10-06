@@ -7,10 +7,11 @@ import {
   welt, zellen, type Grund, type Kennzahlen,
 } from "./welt";
 import { useKamera, type Groesse, type Rahmen } from "@/karte/kamera";
+import { Kartenknopf, Knopf, Kopf, Stripe } from "@/ui";
+import { useRundgang } from "@/rundgang";
 
 const SPEICHER = "baukasten-herrnstrasse-1";
-const STATION = 1; // Andeutung des Rundgangs: Station 1 von 9
-const STRIPE = ["bg-rb-1", "bg-rb-2", "bg-rb-3", "bg-rb-4", "bg-rb-5", "bg-rb-6", "bg-rb-7", "bg-rb-8", "bg-rb-9"];
+const STATION = 1;
 
 /** Die ganze Straßenfläche in Ansichtskoordinaten, mit 5 m Rand. */
 function rahmen(grad: number): Rahmen {
@@ -52,6 +53,7 @@ export default function Baukasten() {
   const [gehwegAnsicht, setGehwegAnsicht] = useState(false);
 
   const gruppe = useRef<SVGGElement>(null);
+  const { erledige } = useRundgang();
   const geste = useRef<Geste | null>(null);
 
   // Ausrichtung folgt der Bühne: hochkant am Telefon, quer am Desktop.
@@ -325,13 +327,14 @@ export default function Baukasten() {
       geist={geist?.quelle === "finger" ? geist : null} geistGrund={geistGrund} geistTeuer={geistTeuer}
       onBauen={() => geist && bauen(geist)} onDrehenGeist={drehenGeist} onAbbrechen={() => setGeist(null)}
       ausgewaehlt={ausgewaehlt} onDrehen={drehenAuswahl} onEntfernen={entfernen} onFertigAuswahl={() => setAuswahl(null)}
-      onFertig={() => { setGeist(null); setFertig(true); }} />
+      onFertig={() => { setGeist(null); setFertig(true); erledige(STATION); }} />
   );
 
   return (
     <div className="flex h-dvh flex-col bg-cream text-ink md:flex-row">
       <div className="flex min-h-0 flex-1 flex-col">
-        <Kopf onZurueck={zuruecksetzen} />
+        <Kopf station={STATION} titel="Die Herrnstraße" unterzeile="Was gehört hierher? Unten wählen, auf die Straße tippen."
+          rechts={<button type="button" onClick={zuruecksetzen} className="mt-1 shrink-0 rounded-[10px] border border-ink-line px-2.5 py-1 text-[13px] text-ink-soft">Neu anfangen</button>} />
         <Anzeigen heute={heute} jetzt={jetzt} className="md:hidden" gehweg={gehwegAnsicht} setGehweg={setGehwegAnsicht} />
         <div ref={kam.buehne} className="relative min-h-0 flex-1 overflow-hidden">
           {kam.viewBox && szene(true)}
@@ -395,26 +398,6 @@ function Beschriftung({ grad, schrift, hochkant }: { grad: number; schrift: numb
       textAnchor={hochkant ? "middle" : "end"} className="fill-ink-soft font-sans" style={{ fontWeight: 600 }} pointerEvents="none">
       {hochkant ? "↑ Stadtplatz" : "← Stadtplatz"}
     </text>
-  );
-}
-
-function Kopf({ onZurueck }: { onZurueck: () => void }) {
-  return (
-    <header className="shrink-0 border-b border-ink-line">
-      <div className="grid h-1 grid-cols-9" aria-label={`Station ${STATION} von 9`}>
-        {STRIPE.map((c, i) => <span key={c} className={i < STATION ? c : "bg-ink-line"} />)}
-      </div>
-      <div className="flex items-start justify-between gap-3 px-4 pt-3 pb-2.5">
-        <div className="min-w-0">
-          <p className="text-[13px] font-semibold text-gold-700">Station {STATION} von 9</p>
-          <h1 className="font-display text-[1.6rem] leading-tight font-semibold">Die Herrnstraße</h1>
-          <p className="mt-0.5 text-sm text-ink-soft">Was gehört hierher? Unten wählen, auf die Straße tippen.</p>
-        </div>
-        <button type="button" onClick={onZurueck} className="mt-1 shrink-0 rounded-[10px] border border-ink-line px-2.5 py-1 text-[13px] text-ink-soft">
-          Neu anfangen
-        </button>
-      </div>
-    </header>
   );
 }
 
@@ -535,24 +518,6 @@ function Leiste(p: LeisteProps) {
   );
 }
 
-function Knopf({ children, onClick, stark, aus }: { children: ReactNode; onClick: () => void; stark?: boolean; aus?: boolean }) {
-  return (
-    <button type="button" onClick={onClick} disabled={aus}
-      className={`rounded-[10px] px-3.5 py-2 text-sm font-semibold disabled:opacity-40 ${stark ? "bg-gold-700 text-cream" : "border border-ink-line bg-cream text-ink"}`}>
-      {children}
-    </button>
-  );
-}
-
-function Kartenknopf({ children, label, onClick, aus }: { children: ReactNode; label: string; onClick: () => void; aus?: boolean }) {
-  return (
-    <button type="button" aria-label={label} title={label} onClick={onClick} disabled={aus}
-      className="grid size-10 place-items-center rounded-[10px] border border-ink-line bg-cream/95 text-lg leading-none shadow-sm disabled:opacity-40">
-      {children}
-    </button>
-  );
-}
-
 function Postkarte({ heute, jetzt, karte, onWeiter, onNeu }: { heute: Kennzahlen; jetzt: Kennzahlen; karte: ReactNode; onWeiter: () => void; onNeu: () => void }) {
   const zeilen = [
     ["Sitzplätze", jetzt.sitze - heute.sitze, ""],
@@ -565,9 +530,7 @@ function Postkarte({ heute, jetzt, karte, onWeiter, onNeu }: { heute: Kennzahlen
   return (
     <div className="fixed inset-0 z-10 grid place-items-end bg-ink/40 md:place-items-center" role="dialog" aria-modal="true" aria-labelledby="postkarte-titel">
       <div className="max-h-[92dvh] w-full overflow-auto rounded-t-[14px] bg-cream md:max-w-xl md:rounded-[14px]">
-        <div className="grid h-1 grid-cols-9">
-          {STRIPE.map((c, i) => <span key={c} className={i <= STATION ? c : "bg-ink-line"} />)}
-        </div>
+        <PostkartenStripe />
         <div className="grid gap-4 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
           <div>
             <p className="text-[13px] font-semibold text-gold-700">Station {STATION} geschafft</p>
@@ -585,14 +548,20 @@ function Postkarte({ heute, jetzt, karte, onWeiter, onNeu }: { heute: Kennzahlen
             ))}
           </dl>
           <p className="text-sm text-ink-soft">
-            Im fertigen Rundgang wird dein Entwurf hier gespeichert und mit allen anderen zu einer gemeinsamen Karte zusammengelegt. Danach geht es zur nächsten Station.
+            Im fertigen Rundgang wird dein Entwurf hier gespeichert und mit allen anderen zu einer gemeinsamen Karte zusammengelegt.
           </p>
           <div className="flex flex-wrap gap-2">
-            <Knopf onClick={onWeiter} stark>Weiterbauen</Knopf>
+            <a href="#start" className="rounded-[10px] bg-gold-700 px-3.5 py-2 text-sm font-semibold text-cream">Zur Übersicht</a>
+            <Knopf onClick={onWeiter}>Weiterbauen</Knopf>
             <Knopf onClick={onNeu}>Neu anfangen</Knopf>
           </div>
         </div>
       </div>
     </div>
   );
+}
+
+function PostkartenStripe() {
+  const { erledigt } = useRundgang();
+  return <Stripe erledigt={erledigt} />;
 }

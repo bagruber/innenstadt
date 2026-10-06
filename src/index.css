@@ -27,3 +27,14 @@ body {
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
+
+/* Eingabefeld in Formularen der Prototypen */
+.eingabe {
+  width: 100%;
+  border: 1px solid var(--color-ink-line);
+  border-radius: 6px;
+  background: var(--color-cream);
+  padding: 0.5rem 0.625rem;
+  font: inherit;
+  font-size: 0.9375rem;
+}

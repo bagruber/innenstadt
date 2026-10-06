@@ -37,3 +37,16 @@ describe("Raster der Altstadt", () => {
     expect(orte(pinsel(stadtplatz))).toContain("Stadtplatz");
   });
 });
+
+describe("Straßenabschnitte", () => {
+  it("teilt die Herrnstraße in mehrere Abschnitte", () => {
+    const herrn = karte.abschnitte.filter((a) => a.name === "Herrnstraße");
+    expect(herrn.length).toBeGreaterThan(1);
+    expect(herrn.reduce((s, a) => s + a.laenge, 0)).toBeGreaterThan(120);
+  });
+  it("hat eindeutige Kennungen und mindestens zwei Punkte je Abschnitt", () => {
+    const ids = karte.abschnitte.map((a) => a.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(karte.abschnitte.every((a) => a.punkte.length >= 2)).toBe(true);
+  });
+});

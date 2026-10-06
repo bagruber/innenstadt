@@ -28,6 +28,10 @@ ART = {
 }
 
 
+# Straßen, deren Abschnitte sich in „Straßen beruhigen“ antippen lassen.
+FAHRSTRASSEN = {"primary", "secondary", "tertiary", "unclassified", "residential", "living_street", "pedestrian"}
+
+
 def m(p):
     return [round(p[0] - X0, 1), round(p[1] - Y0, 1)]
 
@@ -43,6 +47,11 @@ def main():
     knoten = lies_knoten(root)
     gebaeude = []
     strassen = defaultdict(list)  # Name -> Abschnitte
+    fahr = []  # (Tags, Knoten-IDs) der Fahrstraßen
+    for w in root.findall("way"):
+        t = tags(w)
+        if t.get("highway") in FAHRSTRASSEN and t.get("area") != "yes":
+            fahr.append((t, [nd.get("ref") for nd in w.findall("nd") if nd.get("ref") in knoten]))
     for w in root.findall("way"):
         t = tags(w)
         pts = [knoten[nd.get("ref")] for nd in w.findall("nd") if nd.get("ref") in knoten]
@@ -67,6 +76,35 @@ def main():
         if best and best[0] > 12:
             namen.append({"name": name, "pos": m((best[1], best[2])), "winkel": round(best[3], 1)})
 
+    # An Kreuzungen teilen: ein Knoten, den mehrere Fahrstraßen nutzen, oder
+    # der mehrfach in derselben vorkommt, beendet einen Abschnitt.
+    nutzung_knoten = defaultdict(int)
+    for _, ids in fahr:
+        for i in ids:
+            nutzung_knoten[i] += 1
+    abschnitte = []
+    for t, ids in fahr:
+        stueck = [ids[0]]
+        for i in ids[1:]:
+            stueck.append(i)
+            if nutzung_knoten[i] > 1 or i == ids[-1]:
+                pts = [knoten[k] for k in stueck]
+                laenge = sum(math.dist(a, b) for a, b in zip(pts, pts[1:]))
+                mitte_ = pts[len(pts) // 2]
+                if laenge >= 6 and X0 < mitte_[0] < X1 and Y0 < mitte_[1] < Y1:
+                    heute = ("fussgaenger" if t["highway"] == "pedestrian"
+                             else "beruhigt" if t["highway"] == "living_street" else "heute")
+                    abschnitte.append({
+                        "id": f"{stueck[0]}-{stueck[-1]}",
+                        "name": t.get("name", ""),
+                        "heute": heute,
+                        "tempo": t.get("maxspeed"),
+                        "einbahn": t.get("oneway") == "yes",
+                        "laenge": round(laenge),
+                        "punkte": [m(p) for p in pts],
+                    })
+                stueck = [i]
+
     daten = {
         "ort": "Altstadt",
         "einheit": "Meter, Ursprung unten links, x nach Osten, y nach Norden",
@@ -75,6 +113,7 @@ def main():
         "flaechen": flaechen,
         "gebaeude": gebaeude,
         "namen": namen,
+        "abschnitte": abschnitte,
         "quellen": [
             "Öffentliche Flächen: ALKIS Tatsächliche Nutzung, Bayerische Vermessungsverwaltung, CC BY 4.0",
             "Gebäude und Namen: © OpenStreetMap-Mitwirkende, ODbL",
@@ -84,7 +123,7 @@ def main():
     ziel.write_text(json.dumps(daten, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"{ziel.relative_to(WURZEL)}: {len(gebaeude)} Gebäude, "
           + ", ".join(f"{len(v)} {k}" for k, v in flaechen.items())
-          + f", {len(namen)} Namen, {ziel.stat().st_size // 1024} KB")
+          + f", {len(namen)} Namen, {len(abschnitte)} Abschnitte, {ziel.stat().st_size // 1024} KB")
 
 
 if __name__ == "__main__":

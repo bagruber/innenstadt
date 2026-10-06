@@ -13,6 +13,8 @@ export const karte = {
   gebaeude: roh.gebaeude.map((g) => g.map(zeichen)),
   // Im Modell zeigt y nach Norden, beim Zeichnen nach Süden: Winkel spiegeln.
   namen: roh.namen.map((n) => ({ name: n.name, pos: zeichen(n.pos), winkel: -n.winkel })),
+  /** Fahrstraßen, an Kreuzungen geteilt. `heute`: Zustand laut OSM. */
+  abschnitte: roh.abschnitte.map((a) => ({ ...a, heute: a.heute as "heute" | "beruhigt" | "fussgaenger", punkte: a.punkte.map(zeichen) })),
 };
 
 export const ZELLE = 8; // Meter
@@ -76,4 +78,14 @@ export function orte(zellen: Iterable<number>, hoechstens = 3): string[] {
     if (best) zaehler.set(best, (zaehler.get(best) ?? 0) + 1);
   }
   return [...zaehler].sort((a, b) => b[1] - a[1]).slice(0, hoechstens).map(([n]) => n);
+}
+
+/** Der nächstgelegene Ortsname zu einem Punkt, höchstens 60 m entfernt. */
+export function ortVon(p: P): string | null {
+  let best: string | null = null, d = 60;
+  for (const n of karte.namen) {
+    const dn = Math.hypot(n.pos[0] - p[0], n.pos[1] - p[1]);
+    if (dn < d) { d = dn; best = n.name; }
+  }
+  return best;
 }

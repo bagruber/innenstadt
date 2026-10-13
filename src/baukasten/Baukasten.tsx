@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as RKE, type ReactElement, type ReactNode } from "react";
 import { ANGEBOT, BUDGET, KATALOG, type Objekt, type Typ } from "./katalog";
 import { umriss, type P } from "./geometrie";
 import { Form, Vorschau } from "./Symbol";
@@ -34,7 +34,7 @@ function laden(): Objekt[] {
 
 /** Vorschau eines Objekts vor dem Bauen. Mit dem Finger bleibt sie stehen,
  *  bis „Bauen“ gedrückt wird; mit der Maus folgt sie dem Zeiger. */
-type Geist = { typ: Typ; x: number; y: number; viertel: number; quelle: "finger" | "maus" };
+type Geist = { typ: Typ; x: number; y: number; viertel: number; quelle: "finger" | "maus" | "taste" };
 type Geste = { art: "leer" | "geist" | "objekt"; id?: string; cx: number; cy: number; lx: number; ly: number; dx: number; dy: number; bewegt: boolean };
 type Ziehen = { id: string; x: number; y: number; grund: Grund | null };
 
@@ -119,7 +119,7 @@ export default function Baukasten() {
   function waehleWerkzeug(t: Typ | null) {
     setWerkzeug(t);
     setAuswahl(null);
-    setGeist((g) => (g && t && g.quelle === "finger" ? { ...g, typ: t } : null));
+    setGeist((g) => (g && t && g.quelle !== "maus" ? { ...g, typ: t } : null));
   }
 
   function drehenGeist() {
@@ -193,6 +193,30 @@ export default function Baukasten() {
     },
   });
 
+  // Karte mit Fokus: Pfeiltasten schieben die Vorschau um eine Rasterzelle
+  // (die Ansicht ist so gedreht, dass ihre Achsen dem Raster folgen), Enter
+  // baut. Ohne Werkzeug verschieben die Pfeiltasten die Karte.
+  const PFEILE: Record<string, [number, number]> = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+  function karteTaste(e: RKE<SVGSVGElement>) {
+    const pfeil = PFEILE[e.key];
+    if (e.key === "+" || e.key === "-") { e.preventDefault(); kam.zoomeMitte(e.key === "+" ? 1.5 : 1 / 1.5); return; }
+    if (e.key === "Enter" && geist && geist.quelle !== "maus") { e.preventDefault(); bauen(geist); return; }
+    if (!pfeil) return;
+    e.preventDefault();
+    if (!werkzeug) { kam.verschiebe(-pfeil[0] * 60, -pfeil[1] * 60); return; }
+    if (!geist || geist.quelle === "maus") {
+      const r = e.currentTarget.getBoundingClientRect();
+      const [x, y] = schnapp(modellPunkt(r.left + r.width / 2, r.top + r.height / 2));
+      setGeist({ typ: werkzeug, x, y, viertel, quelle: "taste" });
+      return;
+    }
+    const a = (-grad * Math.PI) / 180; // Ansicht → Modell
+    const dx = pfeil[0] * Math.cos(a) - pfeil[1] * Math.sin(a);
+    const dy = pfeil[0] * Math.sin(a) + pfeil[1] * Math.cos(a);
+    const [x, y] = schnapp([geist.x + dx * ZELLE, geist.y + dy * ZELLE]);
+    setGeist({ ...geist, x, y });
+  }
+
   // Tastatur wie in Spielen: R dreht, Esc bricht ab, Strg+Z macht rückgängig.
   const tasten = useRef<(e: KeyboardEvent) => void>(() => {});
   tasten.current = (e) => {
@@ -257,8 +281,10 @@ export default function Baukasten() {
           ? {
               ...gesten,
               onPointerLeave: () => setGeist((g) => (g?.quelle === "maus" ? null : g)),
+              onKeyDown: karteTaste,
+              tabIndex: 0,
               role: "application",
-              "aria-label": "Herrnstraße von oben. Objekt in der Leiste wählen, dann auf die Straße tippen.",
+              "aria-label": "Herrnstraße von oben. Objekt in der Leiste wählen, dann auf die Straße tippen. Mit der Tastatur: Pfeiltasten bewegen die Vorschau, Enter baut, R dreht, Escape bricht ab.",
             }
           : { "aria-hidden": true })}
       >
@@ -324,7 +350,7 @@ export default function Baukasten() {
 
   const leiste = (spalte: boolean) => (
     <Leiste spalte={spalte} werkzeug={werkzeug} waehle={waehleWerkzeug} rest={rest}
-      geist={geist?.quelle === "finger" ? geist : null} geistGrund={geistGrund} geistTeuer={geistTeuer}
+      geist={geist && geist.quelle !== "maus" ? geist : null} geistGrund={geistGrund} geistTeuer={geistTeuer}
       onBauen={() => geist && bauen(geist)} onDrehenGeist={drehenGeist} onAbbrechen={() => setGeist(null)}
       ausgewaehlt={ausgewaehlt} onDrehen={drehenAuswahl} onEntfernen={entfernen} onFertigAuswahl={() => setAuswahl(null)}
       onFertig={() => { setGeist(null); setFertig(true); erledige(STATION); }} />
@@ -460,11 +486,11 @@ function Leiste(p: LeisteProps) {
   const rand = "shrink-0 border-t border-ink-line bg-cream px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]";
   if (p.geist) {
     const art = KATALOG[p.geist.typ];
-    const status = p.geistTeuer ? `Zu teuer: ${p.rest} Punkte übrig.` : p.geistGrund ? GRUND_TEXT[p.geistGrund] : "Passt hierhin. Zum Feinjustieren ziehen.";
+    const status = p.geistTeuer ? `Zu teuer: ${p.rest} Punkte übrig.` : p.geistGrund ? GRUND_TEXT[p.geistGrund] : p.geist.quelle === "taste" ? "Passt hierhin. Enter baut." : "Passt hierhin. Zum Feinjustieren ziehen.";
     return (
       <div className={rand}>
         <p className="text-sm"><span className="font-semibold">{art.name}</span><span className="text-ink-soft"> · {art.kosten} Punkte</span></p>
-        <p className={`mt-0.5 text-[13px] ${p.geistGrund || p.geistTeuer ? "text-blockiert" : "text-ink-soft"}`}>{status}</p>
+        <p aria-live="polite" className={`mt-0.5 text-[13px] ${p.geistGrund || p.geistTeuer ? "text-blockiert" : "text-ink-soft"}`}>{status}</p>
         <div className="mt-2 flex flex-wrap gap-2">
           <Knopf onClick={p.onBauen} stark aus={!!p.geistGrund || p.geistTeuer}>Bauen ✓</Knopf>
           {!("kreis" in art.form) && <Knopf onClick={p.onDrehenGeist}>Drehen</Knopf>}

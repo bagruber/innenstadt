@@ -10,7 +10,7 @@ const RAND = ["border-rb-1", "border-rb-2", "border-rb-3", "border-rb-4", "borde
 const HELL = new Set([3, 4, 6]);
 
 const SPEICHER = [
-  "rundgang-1", "baukasten-herrnstrasse-1", "markieren-altstadt-1", "pins-1", "strassen-1", "swipe-1",
+  "rundgang-1", "baukasten-herrnstrasse-1", "markieren-altstadt-1", "pins-1", "strassen-1", "strassen-2", "swipe-1",
   "laerm-1", "anreise-1", "kalender-1", "bild-1", "abgeschaut-1",
 ];
 

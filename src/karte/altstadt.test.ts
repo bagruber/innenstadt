@@ -39,10 +39,15 @@ describe("Raster der Altstadt", () => {
 });
 
 describe("Straßenabschnitte", () => {
-  it("teilt die Herrnstraße in mehrere Abschnitte", () => {
+  it("fügt OSM-Fortsetzungen zusammen: die Herrnstraße ist ein Abschnitt", () => {
     const herrn = karte.abschnitte.filter((a) => a.name === "Herrnstraße");
-    expect(herrn.length).toBeGreaterThan(1);
-    expect(herrn.reduce((s, a) => s + a.laenge, 0)).toBeGreaterThan(120);
+    expect(herrn).toHaveLength(1);
+    expect(herrn[0].laenge).toBeGreaterThan(140);
+  });
+
+  it("lässt kaum Splitter übrig", () => {
+    const kurz = karte.abschnitte.filter((a) => a.laenge < 15).length;
+    expect(kurz / karte.abschnitte.length).toBeLessThan(0.08);
   });
   it("hat eindeutige Kennungen und mindestens zwei Punkte je Abschnitt", () => {
     const ids = karte.abschnitte.map((a) => a.id);

@@ -6,7 +6,7 @@ import { Geschafft, Kartenknopf, Knopf, Kopf, useHinweis } from "@/ui";
 import { useRundgang } from "@/rundgang";
 
 const STATION = 4;
-const SPEICHER = "strassen-1";
+const SPEICHER = "strassen-2"; // -2: Abschnitte seit dem Zusammenfügen neu geschnitten
 
 // Farben: Wege isarpetrol, Begegnung aubergine (Kanon K1). Anlieger frei ist
 // eine Spielart von Wege, deshalb dieselbe Farbe gestrichelt.

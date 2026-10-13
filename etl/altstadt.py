@@ -82,28 +82,68 @@ def main():
     for _, ids in fahr:
         for i in ids:
             nutzung_knoten[i] += 1
-    abschnitte = []
+    roh = []  # (Tags, Knoten-IDs) je Stück zwischen Teilungspunkten
     for t, ids in fahr:
         stueck = [ids[0]]
         for i in ids[1:]:
             stueck.append(i)
             if nutzung_knoten[i] > 1 or i == ids[-1]:
-                pts = [knoten[k] for k in stueck]
-                laenge = sum(math.dist(a, b) for a, b in zip(pts, pts[1:]))
-                mitte_ = pts[len(pts) // 2]
-                if laenge >= 6 and X0 < mitte_[0] < X1 and Y0 < mitte_[1] < Y1:
-                    heute = ("fussgaenger" if t["highway"] == "pedestrian"
-                             else "beruhigt" if t["highway"] == "living_street" else "heute")
-                    abschnitte.append({
-                        "id": f"{stueck[0]}-{stueck[-1]}",
-                        "name": t.get("name", ""),
-                        "heute": heute,
-                        "tempo": t.get("maxspeed"),
-                        "einbahn": t.get("oneway") == "yes",
-                        "laenge": round(laenge),
-                        "punkte": [m(p) for p in pts],
-                    })
+                roh.append((t, stueck))
                 stueck = [i]
+
+    # OSM teilt Wege auch dort, wo sich nur ein Merkmal ändert (Parkregel,
+    # Belag). Solche Fortsetzungen wieder zusammenfügen: an dem Punkt enden
+    # genau zwei Stücke, und Name, Zustand und Einbahn stimmen überein.
+    def zustand(t):
+        return "fussgaenger" if t["highway"] == "pedestrian" else "beruhigt" if t["highway"] == "living_street" else "heute"
+
+    def passt(a, b):
+        return (a[0].get("name", "") == b[0].get("name", "") and zustand(a[0]) == zustand(b[0])
+                and (a[0].get("oneway") == "yes") == (b[0].get("oneway") == "yes"))
+
+    geaendert = True
+    while geaendert:
+        geaendert = False
+        enden = defaultdict(list)
+        for k, (_, ids) in enumerate(roh):
+            enden[ids[0]].append(k)
+            enden[ids[-1]].append(k)
+        for knoten_id, ks in enden.items():
+            if len(ks) != 2 or ks[0] == ks[1] or not passt(roh[ks[0]], roh[ks[1]]):
+                continue
+            (ta, a), (tb, b) = roh[ks[0]], roh[ks[1]]
+            einbahn = ta.get("oneway") == "yes"
+            if a[-1] == knoten_id and b[0] == knoten_id:
+                ids = a + b[1:]
+            elif b[-1] == knoten_id and a[0] == knoten_id:
+                ids = b + a[1:]
+            elif einbahn:
+                continue  # Gegenläufige Einbahn-Stücke nicht verbinden
+            elif a[-1] == knoten_id:
+                ids = a + b[::-1][1:]
+            else:
+                ids = a[::-1] + b[1:]
+            roh = [x for k, x in enumerate(roh) if k not in ks] + [(ta, ids)]
+            geaendert = True
+            break
+
+    abschnitte = []
+    for t, stueck in roh:
+        pts = [knoten[k] for k in stueck]
+        laenge = sum(math.dist(a, b) for a, b in zip(pts, pts[1:]))
+        mitte_ = pts[len(pts) // 2]
+        if laenge >= 6 and X0 < mitte_[0] < X1 and Y0 < mitte_[1] < Y1:
+            abschnitte.append({
+                # Mit dem zweiten Knoten: Bei Schleifen (Auf dem Plan) verbinden
+                # zwei Wege dieselben Endpunkte.
+                "id": f"{stueck[0]}-{stueck[1]}-{stueck[-1]}",
+                "name": t.get("name", ""),
+                "heute": zustand(t),
+                "tempo": t.get("maxspeed"),
+                "einbahn": t.get("oneway") == "yes",
+                "laenge": round(laenge),
+                "punkte": [m(p) for p in pts],
+            })
 
     daten = {
         "ort": "Altstadt",

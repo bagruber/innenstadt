@@ -1,13 +1,5 @@
 # Offene Punkte
 
-## Vor dem ersten Deploy
-
-- Actions-Secrets `FTP_HOST`, `FTP_USER`, `FTP_PASSWORD` setzen (siehe
-  `PLATTFORM.md`).
-- GitHub Pages in den Repo-Einstellungen auf „GitHub Actions“ stellen.
-- `innenstadt/**` in die `exclude`-Liste von
-  `moosburg-eu/.github/workflows/moosburg-eu.yml` eintragen.
-
 ## Baukasten Herrnstraße
 
 - Ist-Zustand: Stellplätze, Bänke, Bäume, Pflanzkübel, Fahrradständer,
@@ -20,7 +12,8 @@
   ihren alten Stand mit geschätzten Stellplätzen.
 - Der Durchgang im Osten gehört zur ALKIS-Fläche und ist damit bespielbar.
   Gewollt?
-- Platzieren geht nur mit Zeiger oder Finger, nicht per Tastatur.
+- Per Tastatur lassen sich neue Objekte setzen, bestehende aber noch nicht
+  auswählen und verschieben.
 - Das Raster folgt der Hauptrichtung der Straße. Im Knick liegt es deshalb
   rund 20° schräg zu den Fassaden; ein Raster je Abschnitt wäre möglich.
 - Die Katasterfläche reicht am Westende unter ein Gebäude (Arkaden oder
@@ -48,9 +41,6 @@
   verkleinert und neu kodiert, damit fallen Metadaten samt Aufnahmeort weg.
 - Leerstand-QR („Was wäre hier drin?“) ist nicht gebaut: braucht eine
   Leerstandsliste und die Zustimmung der Eigentümer.
-- Straßen: Abschnitte kommen aus OSM und sind teils sehr kurz (unter 10 m).
-  Für die Auswertung reicht das, zum Antippen wären längere Abschnitte
-  angenehmer.
 
 ## Bis zum Start
 

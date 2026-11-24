@@ -24,6 +24,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm test
       - run: pnpm run build
 
       # Eigenes FTP-Konto, in hPanel auf den Ordner innenstadt beschränkt: Das

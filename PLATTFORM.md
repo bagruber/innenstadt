@@ -18,9 +18,11 @@ dann bei `/innenstadt/`.
 ## Deploy
 
 Push auf `main` startet beide Workflows. Der FTP-Workflow braucht drei
-Actions-Secrets im Repo, dieselben Werte wie in den anderen Repos:
-`FTP_HOST`, `FTP_USER`, `FTP_PASSWORD`. Sie gehören in die
-Repo-Einstellungen, nie in eine Datei — das Repo ist öffentlich.
+Actions-Secrets im Repo: `FTP_HOST` (`srv1973.hstgr.io`), `FTP_USER` und
+`FTP_PASSWORD` des eigenen FTP-Kontos `innenstadt`, in hPanel auf diesen
+Ordner beschränkt (`moosburg-eu/BRIEFING.md`, Abschnitt 4). Sie gehören in die
+Repo-Einstellungen, nie in eine Datei — das Repo ist öffentlich. Neue Secrets
+testet der Workflow „FTP-Zugang prüfen“, ohne etwas hochzuladen.
 
 ```bash
 gh secret set FTP_HOST -R bagruber/innenstadt
